@@ -27,7 +27,3 @@
 
 M_DEBUG (cerebellummodule.sli) (Initializing SLI support for CerebellumModule.) message
 
-/StepPatternConnect [ /arraytype /integertype /arraytype /integertype /literaltype ]
-{
-  StepPatternConnect_Vi_i_Vi_i_l
-} def
