@@ -4,7 +4,7 @@ import matplotlib.pylab as pylab
 
 nest.Install('cerebellummodule')
 
-nest.SetKernelStatus({'local_num_threads': 2})
+nest.SetKernelStatus({'local_num_threads': 1})
 
 num_neuron_pre = 1000
 num_neuron_post = 1
@@ -62,8 +62,9 @@ sp_time = neuron_act['times']
 
 pylab.figure()
 pylab.plot(spike_times_pre, weight_after-weight_before)
+pylab.ylim(min(weight_after-weight_before)-0.05,max(weight_after-weight_before)+0.05)
 pylab.xlabel('PF spike time (ms)')
-pylab.ylabel('Diff. Weight (nS)')
+pylab.ylabel('Weight Diff. (nS)')
 
 
 pylab.figure()
