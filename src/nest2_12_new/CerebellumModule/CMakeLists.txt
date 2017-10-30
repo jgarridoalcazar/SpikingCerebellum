@@ -45,6 +45,7 @@ set( MODULE_SOURCES
     histentry_cs.h histentry_cs.cpp
     archiving_node_cs.h archiving_node_cs.cpp
     iaf_cond_exp_cs.h iaf_cond_exp_cs.cpp
+    stdp_sin_connection.h
     )
 
 # 3) We require a header name like this:

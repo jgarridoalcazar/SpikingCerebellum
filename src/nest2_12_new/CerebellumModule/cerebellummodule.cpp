@@ -25,8 +25,7 @@
 
 // include headers with your own stuff
 #include "cerebellummodule.h"
-//#include "stdp_sin_connection.h"
-//#include "volume_transmitter.h"
+#include "stdp_sin_connection.h"
 #include "iaf_cond_exp_cs.h"
 
 // Includes from nestkernel:
@@ -130,8 +129,8 @@ mynest::CerebellumModule::init( SLIInterpreter* i )
      even further, but limits the number of available rports. Please see
      Kunkel et al, Front Neurofinfom 8:78 (2014), Sec 3.3.2, for details.
   */
-  //nest::kernel()
-  //  .model_manager.register_connection_model< mynest::STDPSinConnection< nest::
-  //      TargetIdentifierPtrRport > >( "stdp_sin_synapse" );
+  nest::kernel()
+    .model_manager.register_connection_model< mynest::STDPSinConnection< nest::
+        TargetIdentifierPtrRport > >( "stdp_sin_synapse" );
 
 } // MyModule::init()

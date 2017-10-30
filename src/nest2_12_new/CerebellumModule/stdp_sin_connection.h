@@ -19,23 +19,15 @@
    since the last presynaptic spike in the synapses.
 
    Parameters:
-     Common properties:
-        A_plus    double - Amplitude of weight change for facilitation
-        A_minus   double - Amplitude of weight change for depression
-        Wmin      double - Minimal synaptic weight
-        Wmax      double - Maximal synaptic weight
-           
+      A_plus    double - Amplitude of weight change for facilitation
+      A_minus   double - Amplitude of weight change for depression
+      Wmin      double - Minimal synaptic weight
+      Wmax      double - Maximal synaptic weight
+      exponent  unsigned int - Exponent of the sin function (integer between 1 and 20). The lower the exponent the wider the kernel function.
+      peak      double - Time (in ms) of the peak of the kernel function (typically 100ms for the cerebellar parallel fibers).
+         
 
-     Individual properties:
-        exponent  unsigned int - Exponent of the sin function (integer between 1 and 20). The lower the exponent the wider the kernel function.
-        peak      double - Time (in ms) of the peak of the kernel function (typically 100ms for the cerebellar parallel fibers).
-           
-
-   Remarks:
-     The common properties can only be set by SetDefaults and apply to all synapses of
-     the model.
-
-   References:
+  References:
    [1] Luque N. R., Garrido J. A., Carrillo R. R., Coenen O. J. Ros, E. (2011a). Cerebellarlike 
    corrective model inference engine for manipulation tasks. IEEE Trans. Syst. 
    Man Cybern. B Cybern. 41, 1299–1312. 10.1109/TSMCB.2011.2138693
@@ -46,8 +38,10 @@
    Remarks:
    - based on previous code for EDLUT simulator (https://github.com/EduardoRosLab/edlut)
    
-   SeeAlso: volume_transmitter
+   SeeAlso: iaf_cond_exp_cs
 */
+
+#include "common_synapse_properties.h"
 
 #include "connection.h"
 #include "archiving_node_cs.h"
@@ -59,60 +53,31 @@
 
 namespace mynest
 {
-
 /**
- * Class containing the common properties for all synapses of type dopamine connection.
- */
-class STDPSinCommonProperties : public nest::CommonSynapseProperties
-{
-public:
-  static float terms[11][11];
-
-  /**
-   * Default constructor.
-   * Sets all property values to defaults.
-   */
-  STDPSinCommonProperties();
-
-  /**
-   * Get all properties and put them into a dictionary.
-   */
-  void get_status( DictionaryDatum& d ) const;
-
-  /**
-   * Set properties from the values given in dictionary.
-   */
-  void set_status( const DictionaryDatum& d, nest::ConnectorModel& cm );
-
-  float A_plus_;
-  float A_minus_;
-  float Wmin_;
-  float Wmax_;
-};
-
-/**
- * Class representing an STDPSinConnection with homogeneous parameters,
- * i.e. parameters are the same for all synapses.
+ * Class representing an STDPSinConnection.
  */
 template < typename targetidentifierT >
 class STDPSinConnection : public nest::Connection< targetidentifierT >
 {
 
+private:
+  static float terms[11][11];
+
 public:
-  typedef STDPSinCommonProperties CommonPropertiesType;
+  typedef nest::CommonSynapseProperties CommonPropertiesType;
   typedef nest::Connection< targetidentifierT > ConnectionBase;
 
   /**
    * Default Constructor.
    * Sets default values for all parameters. Needed by GenericConnectorModel.
    */
-  STDPSinConnectionHom();
+  STDPSinConnection();
 
   /**
    * Copy constructor from a property object.
    * Needs to be defined properly in order for GenericConnector to work.
    */
-  STDPSinConnectionHom( const STDPSinConnection& );
+  STDPSinConnection( const STDPSinConnection& );
 
   // Explicitly declare all methods inherited from the dependent base ConnectionBase.
   // This avoids explicit name prefixes in all places these functions are used.
@@ -137,12 +102,7 @@ public:
    * Send an event to the receiver of this connection.
    * \param e The event to send
    */
-  void send( nest::Event& e, nest::thread t, float, const STDPSinCommonProperties& cp );
-
-  void trigger_update_weight( nest::thread t,
-    const std::vector< nest::spikecounter >& sin_spikes,
-    float t_trig,
-    const STDPSinCommonProperties& cp );
+  void send( nest::Event& e, nest::thread t, float, const nest::CommonSynapseProperties& cp );
 
   class ConnTestDummyNode : public nest::ConnTestDummyNodeBase
   {
@@ -174,11 +134,10 @@ public:
     float t_lastspike,
     const CommonPropertiesType& cp )
   {
-    if ( cp.vt_ == 0 )
-      throw nest::BadProperty( "No volume transmitter has been assigned to the STDPSin synapse." );
-    
     ConnTestDummyNode dummy_target;
     ConnectionBase::check_connection_( dummy_target, s, t, receptor_type );
+
+    ((Archiving_Node_CS *) (&t))->register_stdp_connection_cs( t_lastspike - get_delay() );
   }
 
   void
@@ -200,9 +159,32 @@ private:
   float inv_tau_;
   float factor_;
   float * TermPointer_;
+  
+  // This vars could be also common, but this optimization might be performed as a future development.
+  float A_plus_;
+  float A_minus_;
+  float Wmin_;
+  float Wmax_;
 
-  void update_synaptic_state(float t_spike);
+  void apply_state_change(float new_time);
+
+  float check_weight_boundaries(float weight);
 };
+
+template < typename targetidentifierT >
+float STDPSinConnection< targetidentifierT >::terms[11][11] =
+  {{1,0,0,0,0,0,0,0,0,0,0},
+   {A,-A,0,0,0,0,0,0,0,0,0},
+   {3.0f/2.0f*pow(A,2),-4.0f/2.0f*pow(A,2),1.0f/2.0f*pow(A,2),0,0,0,0,0,0,0,0},
+   {10.0f/4.0f*pow(A,3),-15.0f/4.0f*pow(A,3),6.0f/4.0f*pow(A,3),-1.0f/4.0f*pow(A,3),0,0,0,0,0,0,0},
+   {35.0f/8.0f*pow(A,4),-56.0f/8.0f*pow(A,4),28.0f/8.0f*pow(A,4),-8.0f/8.0f*pow(A,4),1.0f/8.0f*pow(A,4),0,0,0,0,0,0},
+   {126.0f/16.0f*pow(A,5),-210.0f/16.0f*pow(A,5),120.0f/16.0f*pow(A,5),-45.0f/16.0f*pow(A,5),10.0f/16.0f*pow(A,5),-1.0f/16.0f*pow(A,5),0,0,0,0,0},
+   {231.0f/16.0f*pow(A,6),-99.0f/4.0f*pow(A,6),495.0f/32.0f*pow(A,6),-55.0f/8.0f*pow(A,6),66.0f/32.0f*pow(A,6),-3.0f/8.0f*pow(A,6),1.0f/32.0f*pow(A,6),0,0,0,0},
+   {429.0f/16.0f*pow(A,7),-3003.0f/64.0f*pow(A,7),1001.0f/32.0f*pow(A,7),-1001.0f/64.0f*pow(A,7),91.0f/16.0f*pow(A,7),-91.0f/64.0f*pow(A,7),7.0f/32.0f*pow(A,7),-1.0f/64.0f*pow(A,7),0,0,0},
+   {6435.0f/128.0f*pow(A,8),-715.0f/8.0f*pow(A,8),1001.0f/16.0f*pow(A,8),-273.0f/8.0f*pow(A,8),455.0f/32.0f*pow(A,8),-35.0f/8.0f*pow(A,8),15.0f/16.0f*pow(A,8),-1.0f/8.0f*pow(A,8),1.0f/128.0f*pow(A,8),0,0},
+   {12155.0f/128.0f*pow(A,9),-21879.0f/128.0f*pow(A,9),1989.0f/16.0f*pow(A,9),-4641.0f/64.0f*pow(A,9),1071.0f/32.0f*pow(A,9),-765.0f/64.0f*pow(A,9),51.0f/16.0f*pow(A,9),-153.0f/256.0f*pow(A,9),9.0f/128.0f*pow(A,9),-1.0f/256.0f*pow(A,9),0},
+   {46189.0f/256.0f*pow(A,10),-20995.0f/64.0f*pow(A,10),62985.0f/256.0f*pow(A,10),-4845.0f/32.0f*pow(A,10),4845.0f/64.0f*pow(A,10),-969.0f/32.0f*pow(A,10),4845.0f/512.0f*pow(A,10),-285.0f/128.0f*pow(A,10),95.0f/256.0f*pow(A,10),-5.0f/128.0f*pow(A,10),1.0f/512.0f*pow(A,10)}};
+
 
 //
 // Implementation of class STDPSinConnection.
@@ -210,20 +192,24 @@ private:
 
 template < typename targetidentifierT >
 STDPSinConnection< targetidentifierT >::STDPSinConnection()
-  : ConnectionBase()
-  , weight_( 1.0 )
-  , state_vars_( )
-  , t_last_update_( 0.0 )
-  , Peak_( 100.0 )
-  , Exponent_( 2 )
-  , TermPointer_( 0 )
+  : ConnectionBase(),
+  weight_( 1.0 ),
+  state_vars_( ),
+  t_last_update_( 0.0 ),
+  Peak_( 100.0 ),
+  Exponent_( 2 ),
+  TermPointer_( 0 ),
+  A_plus_( 1.0 ),
+  A_minus_( 1.0 ),
+  Wmin_( 0.0 ),
+  Wmax_( 200.0 )
 {
   this->state_vars_ = std::vector<float>(this->Exponent_+2);
   inv_tau_ = atan((float) this->Exponent_)/Peak_;
   factor_ = 1.0f/(exp(-atan((float)this->Exponent_))*pow(sin(atan((float)this->Exponent_)),(int) this->Exponent_));
 
   unsigned int ExponenLine = this->Exponent_/2;
-  TermPointer_ = STDPSinCommonProperties::terms[ExponenLine]; 
+  TermPointer_ = STDPSinConnection< targetidentifierT >::terms[ExponenLine]; 
 }
 
 template < typename targetidentifierT >
@@ -247,6 +233,10 @@ STDPSinConnection< targetidentifierT >::get_status( DictionaryDatum& d ) const
 
   // base class properties, different for individual synapse
   ConnectionBase::get_status( d );
+  def< float >( d, "A_plus", A_plus_ );
+  def< float >( d, "A_minus", A_minus_ );
+  def< float >( d, "Wmin", Wmin_ );
+  def< float >( d, "Wmax", Wmax_ );
   def< float >( d, nest::names::weight, this->weight_ );
 
   def< float >( d, "peak", this->Peak_ );
@@ -261,6 +251,12 @@ STDPSinConnection< targetidentifierT >::set_status( const DictionaryDatum& d, ne
   ConnectionBase::set_status( d, cm );
   updateValue< float >( d, nest::names::weight, weight_ );
 
+  updateValue< float >( d, "A_plus", A_plus_ );
+  updateValue< float >( d, "A_minus", A_minus_ );
+  
+  updateValue< float >( d, "Wmin", Wmin_ );
+  updateValue< float >( d, "Wmax", Wmax_ );
+
   long expon;
   if ( updateValue< long >( d, "exponent", expon ))
   { 
@@ -271,7 +267,7 @@ STDPSinConnection< targetidentifierT >::set_status( const DictionaryDatum& d, ne
     this->Exponent_ = (unsigned short int) expon;
 
     unsigned int ExponenLine = Exponent_/2;
-    TermPointer_ = STDPSinCommonProperties::terms[ExponenLine]; 
+    TermPointer_ = STDPSinConnection< targetidentifierT >::terms[ExponenLine]; 
 
     this->state_vars_.resize(this->Exponent_+2);
   }
@@ -283,15 +279,17 @@ STDPSinConnection< targetidentifierT >::set_status( const DictionaryDatum& d, ne
 }
 
 template < typename targetidentifierT >
-void STDPSinConnection< targetidentifierT >::update_synaptic_state(float t_spike){
+void STDPSinConnection< targetidentifierT >::apply_state_change(float new_time){
+
+  // Evolve all the state variables from last_cs_time until t_cs
   float OldExpon = this->state_vars_[1];
 
-  float ElapsedTime = float(t_spike - this->t_last_update_);
+  float ElapsedTime = float(new_time - this->t_last_update_);
   float ElapsedRelative = ElapsedTime*this->inv_tau_;
 
   float expon = ExponentialTable::GetResult(-ElapsedRelative);
 
-  this->t_last_update_ = t_spike;
+  this->t_last_update_ = new_time;
   
   float NewExpon = OldExpon * expon;
   float NewActivity =NewExpon*this->TermPointer_[0];
@@ -321,7 +319,7 @@ void STDPSinConnection< targetidentifierT >::update_synaptic_state(float t_spike
   }
   NewActivity*=this->factor_;
   this->state_vars_[0] = NewActivity;
-  this->state_vars_[1] = NewExpon;
+  this->state_vars_[1] = NewExpon;  
 }
 
 /**
@@ -335,7 +333,7 @@ inline void
 STDPSinConnection< targetidentifierT >::send( nest::Event& e,
   nest::thread t,
   float,
-  const STDPSinCommonProperties& cp )
+  const nest::CommonSynapseProperties& cp )
 {
   // t_lastspike_ = 0 initially
 
@@ -343,30 +341,43 @@ STDPSinConnection< targetidentifierT >::send( nest::Event& e,
 
   // purely dendritic delay
   //float dendritic_delay = get_delay();
-
   float t_spike = e.get_stamp().get_ms();
 
-  //std::cout << "Sending spike in synapsis at time " << t_spike << std::endl;
+  // Apply the LTP due to the previous presynaptic spike
+  this->weight_ += this->A_plus_;
 
-  // Increment the weight a fixed amount A_plus_
-  this->weight_ += cp.A_plus_;
-  if (this->weight_ > cp.Wmax_){
-    this->weight_ = cp.Wmax_;
+  // Check wether the weight stays within the boundaries
+  this->weight_ = this->check_weight_boundaries(this->weight_);
+
+  //std::cout << "Sending spike in synapsis at time " << t_spike << std::endl;
+  std::deque<mynest::histentry_cs>::iterator start;
+  std::deque<mynest::histentry_cs>::iterator finish;
+  //((mynest::Archiving_Node_Sym *)target_)->get_sym_history(t_lastspike - dendritic_delay, t_spike - dendritic_delay,&start, &finish);
+  ((mynest::Archiving_Node_CS *)target)->get_cs_history(this->t_last_update_, t_spike,&start, &finish);
+  //weight change due to post-synaptic spikes since last pre-synaptic spike
+  while (start != finish){
+
+    // Evolve the state variables until the CS spike time
+    this->apply_state_change(start->t_);
+
+    // Update the synaptic weight due to CS
+    this->weight_ -= this->A_minus_*this->state_vars_[0];
+    
+    // Check wether the weight stays within the boundaries
+    this->weight_ = this->check_weight_boundaries(this->weight_);
+
+    ++start;
   }
-  if (this->weight_ < cp.Wmin_){
-    this->weight_ = cp.Wmin_;
-  }
-  
-  // --------------------------------------------
-  // Update the state vars until the current time
-  this->update_synaptic_state(t_spike);
+
+  // Evolve the state variables until the presynaptic spike time
+  this->apply_state_change(t_spike);
 
   // -----------------------------------
   // Add the effect of the presynaptic spike to the state vars
   this->state_vars_[1] += 1.0f;
   for (unsigned int grade=2; grade<=this->Exponent_; grade+=2){
     this->state_vars_[grade] += 1.0f;
-  }
+  }    
 
   e.set_receiver( *target );
   e.set_weight( weight_ );
@@ -377,30 +388,14 @@ STDPSinConnection< targetidentifierT >::send( nest::Event& e,
 }
 
 template < typename targetidentifierT >
-inline void
-STDPSinConnection< targetidentifierT >::trigger_update_weight( nest::thread t,
-  const std::vector< nest::spikecounter >& sin_spikes,
-  const float t_trig,
-  const STDPSinCommonProperties& cp )
-{
-  //std:: cout << "Triggering update weight at time " << t_trig << std::endl;
+inline float STDPSinConnection< targetidentifierT >::check_weight_boundaries(float weight){
+  if (weight_ > this->Wmax_){
+    return this->Wmax_;
+  } else if (weight < this->Wmin_) {
+    return this->Wmin_;
+  }
   
-  // Update the state and weight for each spike in coming from the volume transmitter
-  for (std::vector< nest::spikecounter>::const_iterator it = sin_spikes.begin(); it!=sin_spikes.end(); ++it){
-    float t_spike = it->spike_time_;
-
-    this->update_synaptic_state(t_spike);
-
-    // Update weight due to domaminergic input
-    this->weight_ -= cp.A_minus_*this->state_vars_[0]*it->multiplicity_;
-  }
-
-  if (this->weight_ > cp.Wmax_){
-    this->weight_ = cp.Wmax_;
-  }
-  if (this->weight_ < cp.Wmin_){
-    this->weight_ = cp.Wmin_;
-  }
+  return weight_;
 }
 
 } // of namespace nest
