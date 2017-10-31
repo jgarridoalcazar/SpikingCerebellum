@@ -37,10 +37,10 @@ for id_neuron,neuron in enumerate(SpGeneratorPF):
 	nest.SetStatus([neuron], {'spike_times': [spike_times_pre[id_neuron]]+[test_spike_time]})
 
 nest.Connect(SpGeneratorCF, NeuronCF, 'one_to_one')
-PCReceptor = {'Normal': 0, 'CS_receptor' : 1}
-syn_dict_CFPC = {'model': 'static_synapse', 'weight': 10.0, 'delay':1.0, 'receptor_type':PCReceptor['CS_receptor']}
+PCReceptor = {'AMPA': 1, 'GABA': 2, 'COMPLEX_SPIKE' : 3}
+syn_dict_CFPC = {'model': 'static_synapse', 'weight': 10.0, 'delay':1.0, 'receptor_type':PCReceptor['COMPLEX_SPIKE']}
 nest.Connect(NeuronCF, NeuronPC, 'one_to_one', syn_spec=syn_dict_CFPC)
-syn_dict_PFPC = {'model': 'stdp_sin_synapse', 'weight': 1.0, 'delay':1.0, 'receptor_type':PCReceptor['Normal'], 
+syn_dict_PFPC = {'model': 'stdp_sin_synapse', 'weight': 1.0, 'delay':1.0, 'receptor_type':PCReceptor['AMPA'], 
 				'A_plus': 0.05, 'A_minus': 0.2, 'Wmin':0.00, 'Wmax':2.00,
 				'exponent': 20.0, 'peak': 100.0}
 nest.Connect(NeuronPF, NeuronPC, syn_spec=syn_dict_PFPC)

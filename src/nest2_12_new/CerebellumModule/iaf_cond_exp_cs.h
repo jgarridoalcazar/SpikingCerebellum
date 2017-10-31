@@ -76,6 +76,8 @@ namespace nest
     	extern const Name tau_syn_cs;  //!<  Time constant of the complex spike synaptic exponential function in ms.
     	extern const Name E_cs;        //!<  Complex spike reversal potential in mV.
       extern const Name g_cs;
+      extern const Name COMPLEX_SPIKE;
+      extern const Name GABA;
     }
 }
 
@@ -148,6 +150,14 @@ namespace mynest
   private:
 
     // ---------------------------------------------------------------- 
+    enum SynapseTypes
+  {
+    INF_SPIKE_RECEPTOR = 0,
+    AMPA,
+    GABA,
+    COMPLEX_SPIKE,
+    SUP_SPIKE_RECEPTOR
+  };
 
     //! Model parameters
 	struct Parameters_ {
@@ -279,7 +289,8 @@ namespace mynest
   inline
   nest::port iaf_cond_exp_cs::handles_test_event(nest::SpikeEvent&, nest::rport receptor_type)
   {
-    if (receptor_type < 0 || receptor_type > 1)
+    if (not( INF_SPIKE_RECEPTOR < receptor_type
+         && receptor_type < SUP_SPIKE_RECEPTOR ))
       throw nest::UnknownReceptorType(receptor_type, get_name());
     return receptor_type;
   }
@@ -295,7 +306,8 @@ namespace mynest
   inline
   nest::port iaf_cond_exp_cs::handles_test_event(nest::DataLoggingRequest& dlr, nest::rport receptor_type)
   {
-    if (receptor_type < 0 || receptor_type > 1)
+    if (not( INF_SPIKE_RECEPTOR < receptor_type
+         && receptor_type < SUP_SPIKE_RECEPTOR ))
       throw nest::UnknownReceptorType(receptor_type, get_name());
     return B_.logger_.connect_logging_device(dlr, recordablesMap_);
   }
@@ -306,6 +318,14 @@ namespace mynest
     P_.get(d);
     S_.get(d);
     Archiving_Node_CS::get_status(d);
+
+    DictionaryDatum receptor_type = new Dictionary();
+
+    ( *receptor_type )[ nest::names::AMPA ] = AMPA;
+    ( *receptor_type )[ nest::names::GABA ] = GABA;
+    ( *receptor_type )[ nest::names::COMPLEX_SPIKE ] = COMPLEX_SPIKE;
+    
+    ( *d )[ nest::names::receptor_types ] = receptor_type;
 
     (*d)[nest::names::recordables] = recordablesMap_.get_list();
   }
