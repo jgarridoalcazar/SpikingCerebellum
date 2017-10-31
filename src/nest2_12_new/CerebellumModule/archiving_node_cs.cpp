@@ -104,7 +104,7 @@ void Archiving_Node_CS::register_stdp_connection_cs(double t_first_read){
         } else {
           break;
         }
-      }      
+      }  
 
       history_cs_.push_back( histentry_cs( t_sp_ms, 0) );
     }

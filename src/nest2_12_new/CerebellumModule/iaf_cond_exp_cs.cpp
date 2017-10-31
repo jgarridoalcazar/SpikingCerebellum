@@ -392,7 +392,7 @@ void mynest::iaf_cond_exp_cs::handle(nest::SpikeEvent & e)
 
   if (e.get_rport() == 1){
     B_.spike_cs_.add_value(spike_time, e.get_weight() * e.get_multiplicity() );
-    set_cs_spiketime(nest::Time::step(spike_time));
+    set_cs_spiketime(nest::Time::step(nest::kernel().simulation_manager.get_slice_origin().get_steps()+e.get_rel_delivery_steps(nest::kernel().simulation_manager.get_slice_origin())));
   } else {
     if(e.get_weight() > 0.0)
       B_.spike_exc_.add_value(e.get_rel_delivery_steps(nest::kernel().simulation_manager.get_slice_origin()),

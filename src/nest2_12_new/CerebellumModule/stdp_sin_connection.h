@@ -148,27 +148,27 @@ public:
 
 private:
   // data members of each connection
-  float weight_;
-  std::vector<float> state_vars_;
-  float t_last_update_;
+  double weight_;
+  std::vector<double> state_vars_;
+  double t_last_update_;
 
   // This vars could be common, but state_vars has to be resized according to Exponent.
   // Remaining vars depends on Exponent too.
-  float Peak_;
+  double Peak_;
   unsigned short int Exponent_;
-  float inv_tau_;
-  float factor_;
+  double inv_tau_;
+  double factor_;
   float * TermPointer_;
   
   // This vars could be also common, but this optimization might be performed as a future development.
-  float A_plus_;
-  float A_minus_;
-  float Wmin_;
-  float Wmax_;
+  double A_plus_;
+  double A_minus_;
+  double Wmin_;
+  double Wmax_;
 
-  void apply_state_change(float new_time);
+  void apply_state_change(double new_time);
 
-  float check_weight_boundaries(float weight);
+  double check_weight_boundaries(double weight);
 };
 
 template < typename targetidentifierT >
@@ -198,13 +198,12 @@ STDPSinConnection< targetidentifierT >::STDPSinConnection()
   t_last_update_( 0.0 ),
   Peak_( 100.0 ),
   Exponent_( 2 ),
-  TermPointer_( 0 ),
   A_plus_( 1.0 ),
   A_minus_( 1.0 ),
   Wmin_( 0.0 ),
   Wmax_( 200.0 )
 {
-  this->state_vars_ = std::vector<float>(this->Exponent_+2);
+  this->state_vars_ = std::vector<double>(this->Exponent_+2);
   inv_tau_ = atan((float) this->Exponent_)/Peak_;
   factor_ = 1.0f/(exp(-atan((float)this->Exponent_))*pow(sin(atan((float)this->Exponent_)),(int) this->Exponent_));
 
@@ -222,8 +221,13 @@ STDPSinConnection< targetidentifierT >::STDPSinConnection( const STDPSinConnecti
   , Exponent_( rhs.Exponent_ )
   , inv_tau_( rhs.inv_tau_ )
   , factor_( rhs.factor_ )
-  , TermPointer_( rhs.TermPointer_ )
+  , A_plus_( rhs.A_plus_ )
+  , A_minus_( rhs.A_minus_ )
+  , Wmin_( rhs.Wmin_ )
+  , Wmax_( rhs.Wmax_ )
 {
+  unsigned int ExponenLine = this->Exponent_/2;
+  TermPointer_ = STDPSinConnection< targetidentifierT >::terms[ExponenLine];
 }
 
 template < typename targetidentifierT >
@@ -233,14 +237,14 @@ STDPSinConnection< targetidentifierT >::get_status( DictionaryDatum& d ) const
 
   // base class properties, different for individual synapse
   ConnectionBase::get_status( d );
-  def< float >( d, "A_plus", A_plus_ );
-  def< float >( d, "A_minus", A_minus_ );
-  def< float >( d, "Wmin", Wmin_ );
-  def< float >( d, "Wmax", Wmax_ );
-  def< float >( d, nest::names::weight, this->weight_ );
+  def< double >( d, "A_plus", A_plus_ );
+  def< double >( d, "A_minus", A_minus_ );
+  def< double >( d, "Wmin", Wmin_ );
+  def< double >( d, "Wmax", Wmax_ );
+  def< double >( d, nest::names::weight, this->weight_ );
 
-  def< float >( d, "peak", this->Peak_ );
-  def< long >( d, "exponent", this->Exponent_ );
+  def< double >( d, "peak", this->Peak_ );
+  def< double >( d, "exponent", this->Exponent_ );
 }
 
 template < typename targetidentifierT >
@@ -249,17 +253,22 @@ STDPSinConnection< targetidentifierT >::set_status( const DictionaryDatum& d, ne
 {
   // base class properties
   ConnectionBase::set_status( d, cm );
-  updateValue< float >( d, nest::names::weight, weight_ );
+  updateValue< double >( d, nest::names::weight, weight_ );
 
-  updateValue< float >( d, "A_plus", A_plus_ );
-  updateValue< float >( d, "A_minus", A_minus_ );
+  updateValue< double >( d, "A_plus", A_plus_ );
+  updateValue< double >( d, "A_minus", A_minus_ );
   
-  updateValue< float >( d, "Wmin", Wmin_ );
-  updateValue< float >( d, "Wmax", Wmax_ );
+  updateValue< double >( d, "Wmin", Wmin_ );
+  updateValue< double >( d, "Wmax", Wmax_ );
 
   long expon;
-  if ( updateValue< long >( d, "exponent", expon ))
+  if ( updateValue< double >( d, "exponent", expon ))
   { 
+    double intpart;
+    if (modf(expon, &intpart) != 0.0){
+      throw nest::BadProperty( "STDP sin exponent must be an even integer between 2 and 20" ); 
+    }
+
     if (expon<2 || expon>20 || expon%2!=0)
     {
       throw nest::BadProperty( "STDP sin exponent must be an even integer between 2 and 20" );
@@ -272,32 +281,34 @@ STDPSinConnection< targetidentifierT >::set_status( const DictionaryDatum& d, ne
     this->state_vars_.resize(this->Exponent_+2);
   }
 
-  updateValue< float >( d, "peak", this->Peak_ );
+  updateValue< double >( d, "peak", this->Peak_ );
+
+  //std::cout << "Synapse parameters: Aplus: " << this->A_plus_ << ". Aminus: " << this->A_minus_ << ". Wmin: " << this->Wmin_ << ". Wmax: " << this->Wmax_ << ". Expon: " << this->Exponent_ << ". Peak: " << this->Peak_ << std::endl;
   
   this->inv_tau_ = atan((float) this->Exponent_)/this->Peak_;
   this->factor_ = 1.0f/(exp(-atan((float)this->Exponent_))*pow(sin(atan((float)this->Exponent_)),(int) this->Exponent_)); 
 }
 
 template < typename targetidentifierT >
-void STDPSinConnection< targetidentifierT >::apply_state_change(float new_time){
+void STDPSinConnection< targetidentifierT >::apply_state_change(double new_time){
 
   // Evolve all the state variables from last_cs_time until t_cs
-  float OldExpon = this->state_vars_[1];
+  double OldExpon = this->state_vars_[1];
 
-  float ElapsedTime = float(new_time - this->t_last_update_);
-  float ElapsedRelative = ElapsedTime*this->inv_tau_;
+  double ElapsedTime = double(new_time - this->t_last_update_);
+  double ElapsedRelative = ElapsedTime*this->inv_tau_;
 
-  float expon = ExponentialTable::GetResult(-ElapsedRelative);
+  double expon = ExponentialTable::GetResult(-ElapsedRelative);
 
   this->t_last_update_ = new_time;
   
-  float NewExpon = OldExpon * expon;
-  float NewActivity =NewExpon*this->TermPointer_[0];
+  double NewExpon = OldExpon * expon;
+  double NewActivity =NewExpon*this->TermPointer_[0];
 
   int aux=TrigonometricTable::CalculateOffsetPosition(2*ElapsedRelative);
   int LUTindex=0;
 
-  float SinVar, CosVar, OldVarCos, OldVarSin, NewVarCos, NewVarSin;
+  double SinVar, CosVar, OldVarCos, OldVarSin, NewVarCos, NewVarSin;
   int grade, offset;
   for (grade=2, offset=1; grade<=this->Exponent_; grade+=2, offset++){
 
@@ -333,22 +344,31 @@ inline void
 STDPSinConnection< targetidentifierT >::send( nest::Event& e,
   nest::thread t,
   float,
-  const nest::CommonSynapseProperties& cp )
+  const nest::CommonSynapseProperties& )
 {
   // t_lastspike_ = 0 initially
 
+  //std::cout << "Synapse parameters: Aplus: " << this->A_plus_ << ". Aminus: " << this->A_minus_ << ". Wmin: " << this->Wmin_ << ". Wmax: " << this->Wmax_ << ". Expon: " << this->Exponent_ << ". Peak: " << this->Peak_ << ". Weight: " << this->weight_ << std::endl;
+  
   nest::Node* target = get_target( t );
 
   // purely dendritic delay
   //float dendritic_delay = get_delay();
-  float t_spike = e.get_stamp().get_ms();
+  double t_spike = e.get_stamp().get_ms();
 
-  // Apply the LTP due to the previous presynaptic spike
-  this->weight_ += this->A_plus_;
+  //std::cout << "Processing PF spike at time " << t_spike << std::endl;
 
-  // Check wether the weight stays within the boundaries
-  this->weight_ = this->check_weight_boundaries(this->weight_);
+  if (this->t_last_update_>0.0){
+    // Apply the LTP due to the previous presynaptic spike
+    this->weight_ += this->A_plus_;
 
+    // Check wether the weight stays within the boundaries
+    this->weight_ = this->check_weight_boundaries(this->weight_);
+
+    //std::cout << "Applying LTP. New weight: " << this->weight_ << ".  Aplus: " << this->A_plus_ << std::endl;
+
+  }  
+  
   //std::cout << "Sending spike in synapsis at time " << t_spike << std::endl;
   std::deque<mynest::histentry_cs>::iterator start;
   std::deque<mynest::histentry_cs>::iterator finish;
@@ -357,16 +377,18 @@ STDPSinConnection< targetidentifierT >::send( nest::Event& e,
   //weight change due to post-synaptic spikes since last pre-synaptic spike
   while (start != finish){
 
-    // Evolve the state variables until the CS spike time
-    this->apply_state_change(start->t_);
+     // Evolve the state variables until the CS spike time
+     this->apply_state_change(start->t_);
 
-    // Update the synaptic weight due to CS
-    this->weight_ -= this->A_minus_*this->state_vars_[0];
-    
-    // Check wether the weight stays within the boundaries
-    this->weight_ = this->check_weight_boundaries(this->weight_);
+     // Update the synaptic weight due to CS
+     this->weight_ -= this->A_minus_*this->state_vars_[0];
+   
+     // Check wether the weight stays within the boundaries
+     this->weight_ = this->check_weight_boundaries(this->weight_);
 
-    ++start;
+     //std::cout << "Applying LTD with spike at time: " << start->t_ << ". New weight: " << this->weight_ << std::endl;
+
+     ++start;
   }
 
   // Evolve the state variables until the presynaptic spike time
@@ -388,7 +410,7 @@ STDPSinConnection< targetidentifierT >::send( nest::Event& e,
 }
 
 template < typename targetidentifierT >
-inline float STDPSinConnection< targetidentifierT >::check_weight_boundaries(float weight){
+inline double STDPSinConnection< targetidentifierT >::check_weight_boundaries(double weight){
   if (weight_ > this->Wmax_){
     return this->Wmax_;
   } else if (weight < this->Wmin_) {
