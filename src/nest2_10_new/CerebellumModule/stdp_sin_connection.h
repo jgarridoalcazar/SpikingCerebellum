@@ -65,7 +65,7 @@ private:
   static float terms[11][11];
 
 public:
-  typedef STDPSinCommonProperties CommonPropertiesType;
+  typedef nest::CommonSynapseProperties CommonPropertiesType;
   typedef nest::Connection< targetidentifierT > ConnectionBase;
 
   /**
@@ -103,7 +103,7 @@ public:
    * Send an event to the receiver of this connection.
    * \param e The event to send
    */
-  void send( nest::Event& e, nest::thread t, nest::double_t, const STDPSinCommonProperties& cp );
+  void send( nest::Event& e, nest::thread t, nest::double_t, const nest::CommonSynapseProperties& cp );
 
   class ConnTestDummyNode : public nest::ConnTestDummyNodeBase
   {
@@ -135,9 +135,6 @@ public:
     nest::double_t t_lastspike,
     const CommonPropertiesType& cp )
   {
-    if ( cp.vt_ == 0 )
-      throw nest::BadProperty( "No volume transmitter has been assigned to the STDPSin synapse." );
-    
     ConnTestDummyNode dummy_target;
     ConnectionBase::check_connection_( dummy_target, s, t, receptor_type );
 
@@ -347,7 +344,7 @@ inline void
 STDPSinConnection< targetidentifierT >::send( nest::Event& e,
   nest::thread t,
   nest::double_t,
-  const STDPSinCommonProperties& cp )
+  const nest::CommonSynapseProperties& cp )
 {
   // t_lastspike_ = 0 initially
 

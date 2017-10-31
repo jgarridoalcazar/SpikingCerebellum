@@ -11,7 +11,7 @@
 #ifdef HAVE_GSL
 
 #include "exceptions.h"
-#include "kernel_manager.h"
+#include "network.h"
 #include "dict.h"
 #include "integerdatum.h"
 #include "doubledatum.h"
@@ -318,7 +318,7 @@ void mynest::iaf_cond_exp_cs::calibrate()
 void mynest::iaf_cond_exp_cs::update(nest::Time const & origin, const long from, const long to)
 {
    
-  assert(to >= 0 && (nest::delay) from < nest::kernel().connection_manager.get_min_delay());
+  assert(to >= 0 && (nest::delay) from < nest::Scheduler::get_min_delay());
   assert(from < to);
 
   for ( long lag = from ; lag < to ; ++lag )
@@ -370,7 +370,7 @@ void mynest::iaf_cond_exp_cs::update(nest::Time const & origin, const long from,
             set_spiketime(nest::Time::step(origin.get_steps()+lag+1));
 
             nest::SpikeEvent se;
-            nest::kernel().event_delivery_manager.send(*this, se, lag);
+            network()->send(*this, se, lag);
           }
     
     // set new input current
@@ -388,17 +388,17 @@ void mynest::iaf_cond_exp_cs::handle(nest::SpikeEvent & e)
 
   assert(( e.get_rport() >= 0 ) && ( ( size_t ) e.get_rport() <= 1 ) );
 
-  const long spike_time = e.get_rel_delivery_steps(nest::kernel().simulation_manager.get_slice_origin());
+  const long spike_time = e.get_rel_delivery_steps(network()->get_slice_origin());
 
   if (e.get_rport() == 1){
     B_.spike_cs_.add_value(spike_time, e.get_weight() * e.get_multiplicity() );
-    set_cs_spiketime(nest::Time::step(nest::kernel().simulation_manager.get_slice_origin().get_steps()+e.get_rel_delivery_steps(nest::kernel().simulation_manager.get_slice_origin())));
+    set_cs_spiketime(nest::Time::step(network()->get_slice_origin().get_steps()+e.get_rel_delivery_steps(network()->get_slice_origin())));
   } else {
     if(e.get_weight() > 0.0)
-      B_.spike_exc_.add_value(e.get_rel_delivery_steps(nest::kernel().simulation_manager.get_slice_origin()),
+      B_.spike_exc_.add_value(e.get_rel_delivery_steps(network()->get_slice_origin()),
           e.get_weight() * e.get_multiplicity() );
     else
-      B_.spike_inh_.add_value(e.get_rel_delivery_steps(nest::kernel().simulation_manager.get_slice_origin()),
+      B_.spike_inh_.add_value(e.get_rel_delivery_steps(network()->get_slice_origin()),
           -e.get_weight() * e.get_multiplicity() );  // ensure conductance is positive
   }
 
@@ -413,7 +413,7 @@ void mynest::iaf_cond_exp_cs::handle(nest::CurrentEvent& e)
   const double w=e.get_weight();
 
   // add weighted current; HEP 2002-10-04
-  B_.currents_.add_value(e.get_rel_delivery_steps(nest::kernel().simulation_manager.get_slice_origin()), 
+  B_.currents_.add_value(e.get_rel_delivery_steps(network()->get_slice_origin()), 
           w *c);
 }
 

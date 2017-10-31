@@ -29,8 +29,10 @@ include_HEADERS = cerebellummodule.h
 source_files=  cerebellummodule.cpp \
                ExponentialTable.cpp ExponentialTable.h \
                TrigonometricTable.cpp TrigonometricTable.h \
-               stdp_sin_connection.cpp stdp_sin_connection.h \
-               volume_transmitter.cpp volume_transmitter.h
+               stdp_sin_connection.h \
+               archiving_node_cs.cpp archiving_node_cs.h \
+               histentry_cs.cpp histentry_cs.h \               
+               iaf_cond_exp_cs.cpp iaf_cond_exp_cs.h
                
 if BUILD_DYNAMIC_USER_MODULES
   lib_LTLIBRARIES= libcerebellummodule.la cerebellummodule.la

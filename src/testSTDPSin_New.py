@@ -42,7 +42,7 @@ syn_dict_CFPC = {'model': 'static_synapse', 'weight': 10.0, 'delay':1.0, 'recept
 nest.Connect(NeuronCF, NeuronPC, 'one_to_one', syn_spec=syn_dict_CFPC)
 syn_dict_PFPC = {'model': 'stdp_sin_synapse', 'weight': 1.0, 'delay':1.0, 'receptor_type':PCReceptor['Normal'], 
 				'A_plus': 0.05, 'A_minus': 0.2, 'Wmin':0.00, 'Wmax':2.00,
-				'exponent': 20, 'peak': 100.0}
+				'exponent': 20.0, 'peak': 100.0}
 nest.Connect(NeuronPF, NeuronPC, syn_spec=syn_dict_PFPC)
 
 connections = nest.GetConnections(source=NeuronPF, target=NeuronPC)
