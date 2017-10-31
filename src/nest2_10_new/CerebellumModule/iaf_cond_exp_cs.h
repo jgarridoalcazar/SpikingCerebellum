@@ -50,7 +50,7 @@ E_in       double - Inhibitory reversal potential in mV.
 E_cs       double - Complex spike reversal potential in mV.
 C_m        double - Capacity of the membrane in pF
 g_L        double - Leak conductance in nS;
-tau_th	   double - Time constant of the threshold adaptation in ms.
+tau_th     double - Time constant of the threshold adaptation in ms.
 tau_syn_ex double - Time constant of the excitatory synaptic exponential function in ms.
 tau_syn_in double - Time constant of the inhibitory synaptic exponential function in ms.
 tau_syn_cs double - Time constant of the complex spike synaptic exponential function in ms.
@@ -70,11 +70,11 @@ SeeAlso: iaf_cond_exp
 // Define name constants for state variables and parameters
 namespace nest
 {
-	namespace names
-	{
-    	// Neuron parameters
-    	extern const Name tau_syn_cs;  //!<  Time constant of the complex spike synaptic exponential function in ms.
-    	extern const Name E_cs;        //!<  Complex spike reversal potential in mV.
+  namespace names
+  {
+      // Neuron parameters
+      extern const Name tau_syn_cs;  //!<  Time constant of the complex spike synaptic exponential function in ms.
+      extern const Name E_cs;        //!<  Complex spike reversal potential in mV.
       extern const Name g_cs;
     }
 }
@@ -150,26 +150,26 @@ namespace mynest
     // ---------------------------------------------------------------- 
 
     //! Model parameters
-	struct Parameters_ {
-	  double V_reset_;    //!< Reset Potential in mV
-	  double V_th_;    //!< Reset Potential in mV
+  struct Parameters_ {
+    double V_reset_;    //!< Reset Potential in mV
+    double V_th_;    //!< Reset Potential in mV
     double t_ref_;      //!< Refractory period in ms
-	  double g_L;      //!< Leak Conductance in nS
-	  double C_m;      //!< Membrane Capacitance in pF
-	  double E_ex;        //!< Excitatory reversal Potential in mV
-	  double E_in;        //!< Inhibitory reversal Potential in mV
+    double g_L;      //!< Leak Conductance in nS
+    double C_m;      //!< Membrane Capacitance in pF
+    double E_ex;        //!< Excitatory reversal Potential in mV
+    double E_in;        //!< Inhibitory reversal Potential in mV
     double E_cs;        //!< CS reversal Potential in mV
-	  double E_L;         //!< Leak reversal Potential (aka resting potential) in mV
-	  double tau_synE;    //!< Synaptic Time Constant Excitatory Synapse in ms
-	  double tau_synI;    //!< Synaptic Time Constant for Inhibitory Synapse in ms
+    double E_L;         //!< Leak reversal Potential (aka resting potential) in mV
+    double tau_synE;    //!< Synaptic Time Constant Excitatory Synapse in ms
+    double tau_synI;    //!< Synaptic Time Constant for Inhibitory Synapse in ms
     double tau_synCS;   //!< Synaptic Time Constant for CS Synapse in ms
-	  double I_e;         //!< Constant Current in pA
-	  
-	  Parameters_();  //!< Sets default parameter values
+    double I_e;         //!< Constant Current in pA
+    
+    Parameters_();  //!< Sets default parameter values
 
-	  void get(DictionaryDatum&) const;  //!< Store current values in dictionary
-	  void set(const DictionaryDatum&);  //!< Set values from dicitonary
-	};
+    void get(DictionaryDatum&) const;  //!< Store current values in dictionary
+    void set(const DictionaryDatum&);  //!< Set values from dicitonary
+  };
 
   public:
     // ---------------------------------------------------------------- 
@@ -181,12 +181,12 @@ namespace mynest
      */
     struct State_ {
 
-    	//! Symbolic indices to the elements of the state vector y
-	  enum StateVecElems { V_M = 0,
-			   G_EXC,     
-			   G_INH,
+      //! Symbolic indices to the elements of the state vector y
+    enum StateVecElems { V_M = 0,
+         G_EXC,     
+         G_INH,
          G_CS,
-			   STATE_VEC_SIZE };
+         STATE_VEC_SIZE };
 
       double y_[STATE_VEC_SIZE];  //!< neuron state, must be C-array for GSL solver
       int    r_;                  //!< number of refractory steps remaining
@@ -247,7 +247,7 @@ namespace mynest
       * Internal variables of the model.
       */
      struct Variables_ { 
-    	int    RefractoryCounts_;
+      int    RefractoryCounts_;
      };
 
     // Access functions for UniversalDataLogger -------------------------------
@@ -271,7 +271,7 @@ namespace mynest
   inline
   nest::port iaf_cond_exp_cs::send_test_event(nest::Node& target, nest::rport receptor_type, nest::synindex, bool)
   {
-	nest::SpikeEvent e;
+  nest::SpikeEvent e;
     e.set_sender(*this);
     return target.handles_test_event(e, receptor_type);
   }
