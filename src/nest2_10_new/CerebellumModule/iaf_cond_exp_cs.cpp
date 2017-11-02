@@ -57,6 +57,7 @@ namespace nest  // template specialization must be placed in namespace
       const Name tau_syn_cs("tau_syn_cs");
       const Name E_cs("e_cs");
       const Name g_cs("g_cs");
+      const Name AMPA("AMPA");
       const Name GABA("GABA");
       const Name COMPLEX_SPIKE("COMPLEX_SPIKE");
   }
@@ -388,21 +389,21 @@ void mynest::iaf_cond_exp_cs::handle(nest::SpikeEvent & e)
 {
   assert(e.get_delay() > 0);
 
-  assert(( e.get_rport() >= 0 ) && ( ( size_t ) e.get_rport() <= 1 ) );
+  assert(( e.get_rport() > INF_SPIKE_RECEPTOR ) && ( ( size_t ) e.get_rport() <= SUP_SPIKE_RECEPTOR ) );
 
   const long spike_time = e.get_rel_delivery_steps(network()->get_slice_origin());
 
   switch(e.get_rport()){
     case COMPLEX_SPIKE:
       B_.spike_cs_.add_value(spike_time, e.get_weight() * e.get_multiplicity() );
-      set_cs_spiketime(nest::Time::step(nest::kernel().simulation_manager.get_slice_origin().get_steps()+e.get_rel_delivery_steps(nest::kernel().simulation_manager.get_slice_origin())));
+      set_cs_spiketime(nest::Time::step(network()->get_slice_origin().get_steps()+e.get_rel_delivery_steps(network()->get_slice_origin())));
       break;
     case AMPA:
-      B_.spike_exc_.add_value(e.get_rel_delivery_steps(nest::kernel().simulation_manager.get_slice_origin()),
+      B_.spike_exc_.add_value(e.get_rel_delivery_steps(network()->get_slice_origin()),
           e.get_weight() * e.get_multiplicity() );
       break;
     case GABA:
-      B_.spike_inh_.add_value(e.get_rel_delivery_steps(nest::kernel().simulation_manager.get_slice_origin()),
+      B_.spike_inh_.add_value(e.get_rel_delivery_steps(network()->get_slice_origin()),
           e.get_weight() * e.get_multiplicity() );  // ensure conductance is positive
       break;
     default:

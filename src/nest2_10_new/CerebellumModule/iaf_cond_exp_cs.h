@@ -78,6 +78,7 @@ namespace nest
       extern const Name g_cs;
       extern const Name COMPLEX_SPIKE;
       extern const Name GABA;
+      extern const Name AMPA;
     }
 }
 
@@ -306,8 +307,7 @@ namespace mynest
   inline
   nest::port iaf_cond_exp_cs::handles_test_event(nest::DataLoggingRequest& dlr, nest::rport receptor_type)
   {
-    if (not( INF_SPIKE_RECEPTOR < receptor_type
-         && receptor_type < SUP_SPIKE_RECEPTOR ))
+    if (receptor_type != 0 )
       throw nest::UnknownReceptorType(receptor_type, get_name());
     return B_.logger_.connect_logging_device(dlr, recordablesMap_);
   }
