@@ -27,6 +27,7 @@
 #include "cerebellummodule.h"
 #include "stdp_sin_connection.h"
 #include "iaf_cond_exp_cs.h"
+#include "cd_poisson_generator.h"
 
 // Includes from nestkernel:
 #include "connection_manager_impl.h"
@@ -117,6 +118,10 @@ mynest::CerebellumModule::init( SLIInterpreter* i )
   */
   nest::kernel().model_manager.register_node_model< mynest::iaf_cond_exp_cs >(
     "iaf_cond_exp_cs" );
+
+
+  nest::kernel().model_manager.register_node_model< mynest::cd_poisson_generator >(
+    "cd_poisson_generator" );
 
   /* Register a synapse type.
      Give synapse type as template argument and the name as second argument.
