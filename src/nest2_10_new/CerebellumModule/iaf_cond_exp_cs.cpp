@@ -370,7 +370,7 @@ void mynest::iaf_cond_exp_cs::update(nest::Time const & origin, const long from,
             S_.r_              = V_.RefractoryCounts_;
             S_.y_[State_::V_M] = P_.V_reset_;
 
-            set_spiketime(nest::Time::step(origin.get_steps()+lag+1));
+            //set_spiketime(nest::Time::step(origin.get_steps()+lag+1));
 
             nest::SpikeEvent se;
             network()->send(*this, se, lag);
