@@ -39,6 +39,8 @@
 #include "cerebellummodule.h"
 #include "stdp_sin_connection.h"
 #include "iaf_cond_exp_cs.h"
+#include "cd_poisson_generator.h"
+
 
 // -- Interface to dynamic module loader ---------------------------------------
 
@@ -91,6 +93,9 @@ mynest::CerebellumModule::init( SLIInterpreter* i )
      The first argument is always a reference to the network.
   */
   nest::register_model< mynest::iaf_cond_exp_cs >( nest::NestModule::get_network(), "iaf_cond_exp_cs" );
+
+  nest::register_model< mynest::cd_poisson_generator >( nest::NestModule::get_network(), "cd_poisson_generator" );
+
 
   /* Register a synapse type.
      Give synapse type as template argument and the name as second argument.
