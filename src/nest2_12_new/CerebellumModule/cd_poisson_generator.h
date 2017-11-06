@@ -18,6 +18,8 @@
 #include "nest_types.h"
 #include "node.h"
 #include "stimulating_device.h"
+#include "ring_buffer.h"
+#include "universal_data_logger.h"
 
 /* BeginDocumentation
 Name: cd_poisson_generator - simulate neuron firing with Poisson processes
@@ -119,6 +121,11 @@ namespace mynest
     return false;
   }
 
+  bool local_receiver() const {
+    return true;
+  }
+
+
     /**
      * Import sets of overloaded virtual functions.
      * We need to explicitly include sets of overloaded
@@ -165,11 +172,11 @@ namespace mynest
       * Store independent parameters of the model.
       */
     struct Parameters_{
-      double min_current_;
-      double max_current_;
       double min_rate_;
       double max_rate_;
-
+      double min_current_;
+      double max_current_;
+      
       Parameters_(); //!< Sets default parameter values
 
       void get( DictionaryDatum& ) const; //!< Store current values in dictionary

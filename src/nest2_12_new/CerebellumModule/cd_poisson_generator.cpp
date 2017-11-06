@@ -59,8 +59,8 @@ namespace nest  // template specialization must be placed in namespace
 mynest::cd_poisson_generator::Parameters_::Parameters_()
    : min_rate_( 1.0 ) // Hz
    , max_rate_( 10.0 ) // Hz
-   , min_current( 0.0 ) // nA
-   , max_current( 1.0 ) // nA
+   , min_current_( 0.0 ) // nA
+   , max_current_( 1.0 ) // nA
 {
 }
 
@@ -69,7 +69,7 @@ mynest::cd_poisson_generator::State_::State_(const Parameters_& p)
 {
 }
 
-mynest::iaf_cond_exp_cs::State_::State_(const State_& s)
+mynest::cd_poisson_generator::State_::State_(const State_& s)
   : rate_(s.rate_)
 {
 }
@@ -188,13 +188,6 @@ void mynest::cd_poisson_generator::update(nest::Time const & T, const long from,
     to >= 0 && ( nest::delay ) from < nest::kernel().connection_manager.get_min_delay() );
   assert( from < to );
 
-
-
-  if ( S_.rate_ <= 0 )
-  {
-    return;
-  }
-
   // Calculate average current value
   double current_sum = 0.0;
   
@@ -207,7 +200,7 @@ void mynest::cd_poisson_generator::update(nest::Time const & T, const long from,
     nest::kernel().event_delivery_manager.send( *this, se, lag );
 
     // log state data
-    B_.logger_.record_data(origin.get_steps() + lag);
+    B_.logger_.record_data(T.get_steps() + lag);
   }
 
   double average_current = current_sum/(float) (to-from);
