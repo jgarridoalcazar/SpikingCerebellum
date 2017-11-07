@@ -33,7 +33,8 @@ source_files=  cerebellummodule.cpp \
                archiving_node_cs.cpp archiving_node_cs.h \
                histentry_cs.cpp histentry_cs.h \
                iaf_cond_exp_cs.cpp iaf_cond_exp_cs.h \
-               cd_poisson_generator.cpp cd_poisson_generator.h
+               cd_poisson_generator.cpp cd_poisson_generator.h \
+               rbf_poisson_generator.cpp rbf_poisson_generator.h
                
 if BUILD_DYNAMIC_USER_MODULES
   lib_LTLIBRARIES= libcerebellummodule.la cerebellummodule.la
