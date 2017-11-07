@@ -3,7 +3,7 @@ import nest
 import numpy as np
 import logging
 
-sim.setup(timestep=0.5, threads=1, min_delay=0.5, max_delay=1000.0)
+sim.setup(timestep=0.5, threads=3)
 
 def create_brain():
     """

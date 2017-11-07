@@ -46,13 +46,15 @@ namespace mynest {
   //member functions for Archiving_Node
 
 Archiving_Node_CS::Archiving_Node_CS() :
+    Archiving_Node(),
 		n_incoming_cs_(0),
     history_cs_()
 		{
 		}
 
 Archiving_Node_CS::Archiving_Node_CS(const Archiving_Node_CS& n)
-:n_incoming_cs_(n.n_incoming_cs_),
+: Archiving_Node(n),
+n_incoming_cs_(n.n_incoming_cs_),
 history_cs_()
   {}
 
@@ -91,8 +93,6 @@ void Archiving_Node_CS::register_stdp_connection_cs(double t_first_read){
 
   void mynest::Archiving_Node_CS::set_cs_spiketime(nest::Time const & t_sp, double offset)
   {
-    //Archiving_Node::set_spiketime(t_sp, offset);
-
     const double t_sp_ms = t_sp.get_ms() - offset;
 
     if (n_incoming_cs_){
@@ -113,8 +113,8 @@ void Archiving_Node_CS::register_stdp_connection_cs(double t_first_read){
 
   void mynest::Archiving_Node_CS::get_status(DictionaryDatum & d) const
   {
-	  //Archiving_Node::get_status(d);
-    //def<double>(d, nest::names::t_spike, get_spiketime_ms());
+	  Archiving_Node::get_status(d);
+    def<double>(d, nest::names::t_spike, get_spiketime_ms());
   #ifdef DEBUG_ARCHIVER
     def<int>(d, nest::names::archiver_length, history_cs_.size());
   #endif
@@ -122,7 +122,7 @@ void Archiving_Node_CS::register_stdp_connection_cs(double t_first_read){
 
   void mynest::Archiving_Node_CS::set_status(const DictionaryDatum & d)
   {
-	  //Archiving_Node::set_status(d);
+	  Archiving_Node::set_status(d);
     // We need to preserve values in case invalid values are set
 	  // check, if to clear spike history and K_minus
     bool clear = false;
@@ -133,7 +133,7 @@ void Archiving_Node_CS::register_stdp_connection_cs(double t_first_read){
 
   void mynest::Archiving_Node_CS::clear_history()
   {
-  	//Archiving_Node::clear_history();
+  	Archiving_Node::clear_history();
 
   	history_cs_.clear();
   }

@@ -32,7 +32,7 @@
 #define ARCHIVING_NODE_CS_H
 
 #include "nest.h"
-#include "node.h"
+#include "archiving_node.h"
 #include "dictdatum.h"
 #include "nest_time.h"
 #include "histentry_cs.h"
@@ -55,7 +55,7 @@ namespace mynest {
  * a node which archives spike history for the purposes of
  * timing dependent plasticity
  */
-  class Archiving_Node_CS: public nest::Node
+  class Archiving_Node_CS: public nest::Archiving_Node
 {
    
  public:
