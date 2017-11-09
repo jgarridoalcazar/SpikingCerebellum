@@ -123,6 +123,8 @@ namespace mynest {
     // read the spikehistory for a given point in time
     size_t n_incoming_cos_;
 
+    double tau_cos_;
+
     // Inverse of the learning rule tau
     double inv_tau_cos_;
 

@@ -52,6 +52,7 @@ namespace mynest {
   Archiving_Node_Cos::Archiving_Node_Cos() :
       Archiving_Node(),
       n_incoming_cos_(0),
+      tau_cos_(1.0),
       inv_tau_cos_(1.0),
       exponent_(1.0),
       cos2_(0.0),
@@ -65,6 +66,7 @@ namespace mynest {
   Archiving_Node_Cos::Archiving_Node_Cos(const Archiving_Node_Cos& n)
   :Archiving_Node(n),
   n_incoming_cos_(n.n_incoming_cos_),
+  tau_cos_(n.tau_cos_),
   inv_tau_cos_(n.inv_tau_cos_),
   exponent_(n.exponent_),
   cos2_(n.cos2_),
@@ -207,7 +209,8 @@ namespace mynest {
   void mynest::Archiving_Node_Cos::get_status(DictionaryDatum & d) const
   {
 	  Archiving_Node::get_status(d);
-    def< double >( d, nest::names::tau_cos, 1./this->inv_tau_cos_ );
+
+    def< double >( d, nest::names::tau_cos, this->tau_cos_ );
     def< double >( d, nest::names::exponent, this->exponent_ );
   #ifdef DEBUG_ARCHIVER
     def<int>(d, nest::names::archiver_length, history_cos_.size());
@@ -218,16 +221,15 @@ namespace mynest {
   {
 	  Archiving_Node::set_status(d);
 
-    double new_tau = 0.0;
-    updateValue< double >( d, nest::names::tau_cos, new_tau );
+    updateValue< double >( d, nest::names::tau_cos, this->tau_cos_ );
     updateValue< double >( d, nest::names::exponent, this->exponent_ );
 
-    if ( new_tau <= 0.0 )
+    if ( this->tau_cos_ <= 0.0 )
     {
       throw nest::BadProperty( "All time constants must be strictly positive." );
     }
 
-    this->inv_tau_cos_ = 1./new_tau;
+    this->inv_tau_cos_ = 1./this->tau_cos_;
 
     // We need to preserve values in case invalid values are set
 	  // check, if to clear spike history and K_minus
