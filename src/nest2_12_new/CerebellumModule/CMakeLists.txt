@@ -47,6 +47,10 @@ set( MODULE_SOURCES
     iaf_cond_exp_cs.h iaf_cond_exp_cs.cpp
     cd_poisson_generator.h cd_poisson_generator.cpp
     stdp_sin_connection.h
+    histentry_cos.h histentry_cos.cpp
+    archiving_node_cos.h archiving_node_cos.cpp
+    iaf_cond_exp_cos.h iaf_cond_exp_cos.cpp
+    stdp_cos_connection.h
     )
 
 # 3) We require a header name like this:

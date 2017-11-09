@@ -27,6 +27,8 @@
 #include "cerebellummodule.h"
 #include "stdp_sin_connection.h"
 #include "iaf_cond_exp_cs.h"
+#include "stdp_cos_connection.h"
+#include "iaf_cond_exp_cos.h"
 #include "cd_poisson_generator.h"
 #include "rbf_poisson_generator.h"
 
@@ -120,6 +122,8 @@ mynest::CerebellumModule::init( SLIInterpreter* i )
   nest::kernel().model_manager.register_node_model< mynest::iaf_cond_exp_cs >(
     "iaf_cond_exp_cs" );
 
+  nest::kernel().model_manager.register_node_model< mynest::iaf_cond_exp_cos >(
+    "iaf_cond_exp_cos" );
 
   nest::kernel().model_manager.register_node_model< mynest::cd_poisson_generator >(
     "cd_poisson_generator" );
@@ -139,5 +143,9 @@ mynest::CerebellumModule::init( SLIInterpreter* i )
   nest::kernel()
     .model_manager.register_connection_model< mynest::STDPSinConnection< nest::
         TargetIdentifierPtrRport > >( "stdp_sin_synapse" );
+
+  nest::kernel()
+    .model_manager.register_connection_model< mynest::STDPCosConnection< nest::
+        TargetIdentifierPtrRport > >( "stdp_cos_synapse" );
 
 } // MyModule::init()

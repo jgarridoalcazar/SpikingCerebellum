@@ -38,7 +38,9 @@
 // include headers with your own stuff
 #include "cerebellummodule.h"
 #include "stdp_sin_connection.h"
+#include "stdp_cos_connection.h"
 #include "iaf_cond_exp_cs.h"
+#include "iaf_cond_exp_cos.h"
 #include "cd_poisson_generator.h"
 #include "rbf_poisson_generator.h"
 
@@ -95,6 +97,8 @@ mynest::CerebellumModule::init( SLIInterpreter* i )
   */
   nest::register_model< mynest::iaf_cond_exp_cs >( nest::NestModule::get_network(), "iaf_cond_exp_cs" );
 
+  nest::register_model< mynest::iaf_cond_exp_cos >( nest::NestModule::get_network(), "iaf_cond_exp_cos" );
+
   nest::register_model< mynest::cd_poisson_generator >( nest::NestModule::get_network(), "cd_poisson_generator" );
 
   nest::register_model< mynest::rbf_poisson_generator >( nest::NestModule::get_network(), "rbf_poisson_generator" );
@@ -114,5 +118,8 @@ mynest::CerebellumModule::init( SLIInterpreter* i )
   */
   nest::register_connection_model< mynest::STDPSinConnection< nest::TargetIdentifierPtrRport > >(
     nest::NestModule::get_network(), "stdp_sin_synapse" );
+
+  nest::register_connection_model< mynest::STDPCosConnection< nest::TargetIdentifierPtrRport > >(
+    nest::NestModule::get_network(), "stdp_cos_synapse" );
 
 } // MyModule::init()
