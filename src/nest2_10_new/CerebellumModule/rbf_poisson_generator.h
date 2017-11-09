@@ -116,16 +116,7 @@ namespace mynest
     rbf_poisson_generator(const rbf_poisson_generator&);
     ~rbf_poisson_generator();
 
-  bool has_proxies() const
-  {
-    return false;
-  }
-
-  bool local_receiver() const {
-    return true;
-  }
-
-
+  
     /**
      * Import sets of overloaded virtual functions.
      * We need to explicitly include sets of overloaded
@@ -135,7 +126,6 @@ namespace mynest
      * happily live without.
      */
 
-    using Node::event_hook;
     using nest::Node::handles_test_event;
     using nest::Node::handle;
 
@@ -157,8 +147,7 @@ namespace mynest
     void calibrate();
     
     void update(nest::Time const &, const long, const long);
-    void event_hook( nest::DSSpikeEvent&);
-
+  
     // END Boilerplate function declarations ----------------------------
 
     // Friends --------------------------------------------------------
@@ -194,6 +183,8 @@ namespace mynest
     struct State_ {
 
       double rate_; 
+
+      double input_current_; 
 
       State_(const Parameters_&);  //!< Default initialization
       State_(const State_&);
@@ -238,6 +229,9 @@ namespace mynest
     //! Read out state vector elements, used by UniversalDataLogger
     double get_rate_() const { return S_.rate_; }
 
+    //! Read out state vector elements, used by UniversalDataLogger
+    double get_current_() const { return S_.input_current_; }
+
   // ------------------------------------------------------------
 
     Parameters_ P_;
@@ -254,18 +248,9 @@ namespace mynest
   inline
   nest::port rbf_poisson_generator::send_test_event(nest::Node& target, nest::rport receptor_type, nest::synindex syn_id, bool dummy_target)
   {
-  	if ( dummy_target )
-    {
-      nest::DSSpikeEvent e;
-      e.set_sender( *this );
-      return target.handles_test_event( e, receptor_type );
-    }
-    else
-    {
-      nest::SpikeEvent e;
-      e.set_sender( *this );
-      return target.handles_test_event( e, receptor_type );
-    }
+  	nest::SpikeEvent e;
+    e.set_sender( *this );
+    return target.handles_test_event( e, receptor_type );
   }
 
   inline

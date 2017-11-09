@@ -1,1 +1,15 @@
-src/mmb/
+src/nest2_12_new/mmb
+src/nest2_10_new/mmb
+src/nest2_10_new/CerebellumModule/autom4te.cache
+src/nest2_10_new/CerebellumModule/libltdl
+src/nest2_10_new/CerebellumModule/aclocal.m4
+src/nest2_10_new/CerebellumModule/compile
+src/nest2_10_new/CerebellumModule/config.guess
+src/nest2_10_new/CerebellumModule/config.sub
+src/nest2_10_new/CerebellumModule/configure
+src/nest2_10_new/CerebellumModule/depcomp
+src/nest2_10_new/CerebellumModule/install-sh
+src/nest2_10_new/CerebellumModule/ltmain.sh
+src/nest2_10_new/CerebellumModule/Makefile.in
+src/nest2_10_new/CerebellumModule/missing
+src/nest2_10_new/CerebellumModule/mymodule_config.h.in

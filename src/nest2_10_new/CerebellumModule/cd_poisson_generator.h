@@ -53,29 +53,6 @@ Remarks:
    not actually send out n spikes. Instead, it emits a single spike with
    n-fold synaptic weight for the sake of efficiency.
 
-   The design decision to implement the Poisson generator as a device
-   which sends spikes to all connected nodes on every time step and then
-   discards the spikes that should not have happened generating random
-   numbers at the recipient side via an event hook is twofold.
-
-   On one hand, it leads to the saturation of the messaging network with
-   an enormous amount of spikes, most of which will never get delivered
-   and should not have been generated in the first place.
-
-   On the other hand, a proper implementation of the Poisson generator
-   needs to provide two basic features: (a) generated spike trains
-   should be IID processes w.r.t. target neurons to which the generator
-   is connected and (b) as long as virtual_num_proc is constant, each
-   neuron should receive an identical Poisson spike train in order to
-   guarantee reproducibility of the simulations across varying machine
-   numbers.
-
-   Therefore, first, as Network::get_network().send sends spikes to all the
-   recipients, differentiation has to happen in the hook, second, the
-   hook can use the RNG from the thread where the recipient neuron sits,
-   which explains the current design of the generator. For details,
-   refer to:
-
 SeeAlso: poisson_generator, Device, parrot_neuron
 */
 
@@ -94,18 +71,6 @@ namespace nest
 
 namespace mynest
 {
-  /**
-   * Function computing right-hand side of ODE for GSL solver.
-   * @note Must be declared here so we can befriend it in class.
-   * @note Must have C-linkage for passing to GSL. Internally, it is
-   *       a first-class C++ function, but cannot be a member function
-   *       because of the C-linkage.
-   * @note No point in declaring it inline, since it is called
-   *       through a function pointer.
-   * @param void* Pointer to model neuron instance.
-   */
-  //extern "C"
-  //int cd_poisson_generator_dynamics (double, const double*, double*, void*);
   
   class cd_poisson_generator : public nest::Node
   {
@@ -116,16 +81,6 @@ namespace mynest
     cd_poisson_generator(const cd_poisson_generator&);
     ~cd_poisson_generator();
 
-  bool has_proxies() const
-  {
-    return false;
-  }
-
-  bool local_receiver() const {
-    return true;
-  }
-
-
     /**
      * Import sets of overloaded virtual functions.
      * We need to explicitly include sets of overloaded
@@ -135,7 +90,6 @@ namespace mynest
      * happily live without.
      */
 
-    using Node::event_hook;
     using nest::Node::handles_test_event;
     using nest::Node::handle;
 
@@ -157,8 +111,6 @@ namespace mynest
     void calibrate();
     
     void update(nest::Time const &, const long, const long);
-    void event_hook( nest::DSSpikeEvent&);
-
     // END Boilerplate function declarations ----------------------------
 
     // Friends --------------------------------------------------------
@@ -194,6 +146,8 @@ namespace mynest
     struct State_ {
 
       double rate_; 
+
+      double input_current_; 
 
       State_(const Parameters_&);  //!< Default initialization
       State_(const State_&);
@@ -238,6 +192,9 @@ namespace mynest
     //! Read out state vector elements, used by UniversalDataLogger
     double get_rate_() const { return S_.rate_; }
 
+    //! Read out state vector elements, used by UniversalDataLogger
+    double get_current_() const { return S_.input_current_; }
+
   // ------------------------------------------------------------
 
     Parameters_ P_;
@@ -254,18 +211,9 @@ namespace mynest
   inline
   nest::port cd_poisson_generator::send_test_event(nest::Node& target, nest::rport receptor_type, nest::synindex syn_id, bool dummy_target)
   {
-  	if ( dummy_target )
-    {
-      nest::DSSpikeEvent e;
-      e.set_sender( *this );
-      return target.handles_test_event( e, receptor_type );
-    }
-    else
-    {
-      nest::SpikeEvent e;
-      e.set_sender( *this );
-      return target.handles_test_event( e, receptor_type );
-    }
+  	nest::SpikeEvent e;
+    e.set_sender( *this );
+    return target.handles_test_event( e, receptor_type );
   }
 
   inline

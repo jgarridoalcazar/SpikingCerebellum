@@ -7,6 +7,8 @@ nest.set_verbosity('M_WARNING')
 
 nest.Install('cerebellummodule')
 
+nest.SetKernelStatus({"local_num_threads": 1})
+
 num_neurons = 200
 
 cur_generator = nest.Create('dc_generator', 1)
@@ -46,6 +48,8 @@ for cur_time in numpy.arange(0.0, sim_time, sim_step):
 	aft_sim = time.time()
 	el_ass_time += (bef_sim-bef_ass)
 	el_sim_time += (aft_sim-bef_sim)
+
+print nest.GetKernelStatus('min_delay')
 
 neuron_act = nest.GetStatus(spike_detector, 'events') [0]
 sp_id = neuron_act['senders']

@@ -39,6 +39,10 @@ namespace nest  // template specialization must be placed in namespace
     // use standard names whereever you can for consistency!
     insert_(names::rate,
     &mynest::rbf_poisson_generator::get_rate_);
+
+    // use standard names whereever you can for consistency!
+    insert_(names::I,
+    &mynest::rbf_poisson_generator::get_current_);
   }
   
   namespace names
@@ -65,12 +69,14 @@ mynest::rbf_poisson_generator::Parameters_::Parameters_()
 }
 
 mynest::rbf_poisson_generator::State_::State_(const Parameters_& p)
-  : rate_(5.0)
+  : rate_(5.0),
+  input_current_(0.0)
 {
 }
 
 mynest::rbf_poisson_generator::State_::State_(const State_& s)
-  : rate_(s.rate_)
+  : rate_(s.rate_),
+  input_current_(s.input_current_)
 {
 }
 
@@ -101,11 +107,13 @@ void mynest::rbf_poisson_generator::Parameters_::set(const DictionaryDatum& d)
 void mynest::rbf_poisson_generator::State_::get(DictionaryDatum &d) const
 {
   def<double>(d, nest::names::rate, rate_);
+  def<double>(d, nest::names::I, input_current_);
 }
 
 void mynest::rbf_poisson_generator::State_::set(const DictionaryDatum& d, const Parameters_&)
 {
   updateValue<double>(d, nest::names::rate, rate_);
+  updateValue<double>(d, nest::names::I, input_current_);
 }
 
 mynest::rbf_poisson_generator::Buffers_::Buffers_(mynest::rbf_poisson_generator& n)
@@ -172,6 +180,9 @@ void mynest::rbf_poisson_generator::calibrate()
 {
   B_.logger_.init();
 
+  double gaussian = std::exp(-((S_.input_current_ - P_.mean_current_rbf_) * (S_.input_current_ - P_.mean_current_rbf_))/((2.0 * P_.sigma_current_rbf_ * P_.sigma_current_rbf_)));
+  S_.rate_ = P_.min_rate_rbf_ + gaussian * (P_.max_rate_rbf_ - P_.min_rate_rbf_);
+
   // rate_ is in Hz, dt in ms, so we have to convert from s to ms
   V_.poisson_dev_.set_lambda(
     nest::Time::get_resolution().get_ms() * S_.rate_ * 1e-3 );
@@ -188,46 +199,43 @@ void mynest::rbf_poisson_generator::update(nest::Time const & T, const long from
     to >= 0 && ( nest::delay ) from < nest::Scheduler::get_min_delay() );
   assert( from < to );
 
-  // Calculate average current value
-  double current_sum = 0.0;
-  
+  librandom::RngPtr rng = network()->get_rng( get_thread() );
+
   for ( long lag = from; lag < to; ++lag)
   {
+    double new_current = B_.currents_.get_value(lag);
 
-    current_sum += B_.currents_.get_value(lag);
+    // Update the firing rate only when the input current changes
+    if (S_.input_current_!= new_current){
 
-    nest::DSSpikeEvent se;
-    network()->send( *this, se, lag );
+      S_.input_current_ = new_current;
+      
+      double gaussian = std::exp(-((S_.input_current_ - P_.mean_current_rbf_) * (S_.input_current_ - P_.mean_current_rbf_))/((2.0 * P_.sigma_current_rbf_ * P_.sigma_current_rbf_)));
+      S_.rate_ = P_.min_rate_rbf_ + gaussian * (P_.max_rate_rbf_ - P_.min_rate_rbf_);
 
+      // Lambda device frequency is updated only once per call to update.
+      V_.poisson_dev_.set_lambda(
+        nest::Time::get_resolution().get_ms() * S_.rate_ * 1e-3 );
+    }
+
+      
+    if (S_.rate_ > 0.0){
+      long n_spikes = V_.poisson_dev_.ldev( rng );
+
+      if ( n_spikes > 0 ) // we must not send events with multiplicity 0
+      {
+        nest::SpikeEvent e;
+        e.set_multiplicity( n_spikes );
+        network()->send( *this, e, lag );
+      }
+    }
+ 
     // log state data
     B_.logger_.record_data(T.get_steps() + lag);
   }
 
-  double average_current = current_sum/(float) (to-from);
-
-  double gaussian = std::exp(-((average_current - P_.mean_current_rbf_) * (average_current - P_.mean_current_rbf_))/((2 * P_.sigma_current_rbf_ * P_.sigma_current_rbf_)));
-  double rate = P_.min_rate_rbf_ + gaussian * (P_.max_rate_rbf_ - P_.min_rate_rbf_);
-
-
-  S_.rate_ = rate;
-
-  // Lambda device frequency is updated only once per call to update.
-  V_.poisson_dev_.set_lambda(
-    nest::Time::get_resolution().get_ms() * S_.rate_ * 1e-3 );
-
 }
 
-void mynest::rbf_poisson_generator::event_hook(nest::DSSpikeEvent & e)
-{
-  librandom::RngPtr rng = network()->get_rng( get_thread() );
-  long n_spikes = V_.poisson_dev_.ldev( rng );
-
-  if ( n_spikes > 0 ) // we must not send events with multiplicity 0
-  {
-    e.set_multiplicity( n_spikes );
-    e.get_receiver().handle( e );
-  }  
-}
 
 void mynest::rbf_poisson_generator::handle(nest::CurrentEvent& e)
 {
